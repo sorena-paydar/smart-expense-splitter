@@ -6,6 +6,8 @@ services:
       - "8080:8080"
     depends_on:
       - db
+    networks:
+      - expense_network
   db:
     image: mysql:8.0
     container_name: smart_expense_splitter_db
@@ -14,3 +16,8 @@ services:
       MYSQL_DATABASE: smart_expense_splitter
     ports:
       - "3306:3306"
+    networks:
+      - expense_network
+networks:
+  expense_network:
+    driver: bridge

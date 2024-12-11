@@ -1,4 +1,4 @@
-package org.example.smartexpensesplitter;
+package org.Smart.ExpenseSplitter;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

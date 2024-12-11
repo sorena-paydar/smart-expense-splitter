@@ -4,24 +4,26 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.util.UUID;
+import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Entity
 @Data
-@Table(name = "users")
 public class UserEntity extends BaseEntity {
-
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    @Column(nullable = false)
-    private String name;
-
-    @Column(unique = true, nullable = false)
+    private String username;
     private String email;
-
-    @Column(nullable = false)
     private String password;
+
+    @OneToMany(mappedBy = "user")
+    private List<ExpenseEntity> expenses;
+
+    @OneToMany(mappedBy = "payer")
+    private List<SettlementEntity> settlementsAsPayer;
+
+    @OneToMany(mappedBy = "payee")
+    private List<SettlementEntity> settlementsAsPayee;
 }

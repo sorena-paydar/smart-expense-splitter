@@ -8,8 +8,10 @@ import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Entity
+@Table(name = "users")
 @Data
 public class UserEntity extends BaseEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

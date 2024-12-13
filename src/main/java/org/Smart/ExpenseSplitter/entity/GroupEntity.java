@@ -3,14 +3,12 @@ package org.Smart.ExpenseSplitter.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Entity
+@Table(name = "`groups`")
 @Data
 public class GroupEntity extends BaseEntity {
     @Id

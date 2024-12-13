@@ -16,16 +16,20 @@ public class UserEntity extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
     private String username;
+
+    @Column(nullable = false)
     private String email;
+
     private String password;
 
-    @OneToMany(mappedBy = "user")
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     private List<ExpenseEntity> expenses;
 
-    @OneToMany(mappedBy = "payer")
+    @OneToMany(mappedBy = "payer", fetch = FetchType.LAZY)
     private List<SettlementEntity> settlementsAsPayer;
 
-    @OneToMany(mappedBy = "payee")
+    @OneToMany(mappedBy = "payee", fetch = FetchType.LAZY)
     private List<SettlementEntity> settlementsAsPayee;
 }

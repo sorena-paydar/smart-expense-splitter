@@ -1,7 +1,8 @@
-package org.Smart.ExpenseSplitter.security;
+package org.Smart.ExpenseSplitter.service;
 
 import io.jsonwebtoken.*;
 import org.Smart.ExpenseSplitter.config.JwtProperties;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -9,22 +10,21 @@ import javax.crypto.spec.SecretKeySpec;
 import java.util.Date;
 
 @Component
-public class JwtUtil {
+public class JwtService {
 
     private final JwtProperties jwtProperties;
 
-    public JwtUtil(JwtProperties jwtProperties) {
+    public JwtService(JwtProperties jwtProperties) {
         this.jwtProperties = jwtProperties;
-        System.out.println(this.jwtProperties.getSecret());
     }
 
     private SecretKey createKey() {
         return new SecretKeySpec(jwtProperties.getSecret().getBytes(), SignatureAlgorithm.HS256.getJcaName());
     }
 
-    public String generateToken(String username) {
+    public String generateToken(Authentication authentication) {
         return Jwts.builder()
-                .setSubject(username)
+                .setSubject(authentication.getName())
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getExpiration()))
                 .signWith(createKey())

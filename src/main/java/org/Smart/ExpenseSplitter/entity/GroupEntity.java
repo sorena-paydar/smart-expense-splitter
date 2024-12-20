@@ -17,13 +17,22 @@ public class GroupEntity extends BaseEntity {
 
     private String name;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "creator_id", nullable = false)
     private UserEntity creator;
+
+    @ManyToMany
+    @JoinTable(
+            name = "group_members",
+            joinColumns = @JoinColumn(name = "group_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id")
+    )
+    private List<UserEntity> users;
 
     @OneToMany(mappedBy = "group", fetch = FetchType.LAZY)
     private List<ExpenseEntity> expenses;
 
     @OneToMany(mappedBy = "group", fetch = FetchType.LAZY)
     private List<SettlementEntity> settlements;
+
 }

@@ -1,5 +1,6 @@
 package org.Smart.ExpenseSplitter.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -19,4 +20,9 @@ public abstract class BaseEntity {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Version
+    @Column(name = "version")
+    @JsonIgnore
+    private Integer version; // Optimistic Locking
 }

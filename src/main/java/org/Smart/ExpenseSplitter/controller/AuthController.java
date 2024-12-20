@@ -1,8 +1,6 @@
 package org.Smart.ExpenseSplitter.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.Smart.ExpenseSplitter.dto.JsonResponse;
@@ -10,7 +8,6 @@ import org.Smart.ExpenseSplitter.dto.auth.AuthRequestDTO;
 import org.Smart.ExpenseSplitter.dto.auth.JwtTokenResponseDTO;
 import org.Smart.ExpenseSplitter.entity.UserEntity;
 import org.Smart.ExpenseSplitter.repository.UserRepository;
-import org.Smart.ExpenseSplitter.service.AuthService;
 import org.Smart.ExpenseSplitter.service.JwtService;
 import org.Smart.ExpenseSplitter.util.ValidationUtils;
 import org.springframework.dao.DataIntegrityViolationException;

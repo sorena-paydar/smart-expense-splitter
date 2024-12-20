@@ -1,7 +1,9 @@
 package org.Smart.ExpenseSplitter.service;
 
 import org.Smart.ExpenseSplitter.entity.UserEntity;
+import org.Smart.ExpenseSplitter.exception.UserNotFoundException;
 import org.Smart.ExpenseSplitter.repository.UserRepository;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -42,5 +44,11 @@ public class AuthService implements UserDetailsService {
                 .username(user.get().getUsername())
                 .password(user.get().getPassword())
                 .build();
+    }
+
+    public UserEntity getCurrentUser() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        return findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
     }
 }

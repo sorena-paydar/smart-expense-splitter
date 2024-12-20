@@ -13,10 +13,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
 
 @RestController
 @RequestMapping("/api/v1/groups")
+@Validated
 public class GroupController {
 
     private final GroupService groupService;
@@ -55,7 +59,7 @@ public class GroupController {
 
     @Operation(summary = "Create a new group")
     @PostMapping("/create")
-    public ResponseEntity<JsonResponse> createGroup(@RequestParam String groupName) {
+    public ResponseEntity<JsonResponse> createGroup(String groupName) {
         try {
             GroupEntity group = groupService.createGroup(groupName);
             return ResponseEntity.status(HttpStatus.CREATED)
@@ -97,6 +101,7 @@ public class GroupController {
     }
 
     @Operation(summary = "Delete a group (only for the owner)")
+    @PreAuthorize("@groupService.isGroupOwner(principal, #groupId)")
     @DeleteMapping("/{groupId}/delete")
     public ResponseEntity<JsonResponse> deleteGroup(@PathVariable Long groupId) {
         try {
@@ -106,7 +111,7 @@ public class GroupController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(new JsonResponse(false, e.getMessage()));
         } catch (BadRequestException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(new JsonResponse(false, e.getMessage()));
         }
     }

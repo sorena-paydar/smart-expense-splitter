@@ -29,10 +29,9 @@ public class GroupEntity extends BaseEntity {
     )
     private List<UserEntity> users;
 
-    @OneToMany(mappedBy = "group", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "group", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private List<ExpenseEntity> expenses;
 
-    @OneToMany(mappedBy = "group", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "group", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private List<SettlementEntity> settlements;
-
 }

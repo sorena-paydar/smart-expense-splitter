@@ -7,8 +7,11 @@ import org.Smart.ExpenseSplitter.repository.GroupRepository;
 import org.apache.coyote.BadRequestException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
 
 
 @Service
@@ -20,6 +23,19 @@ public class GroupService {
     public GroupService(GroupRepository groupRepository, AuthService userService) {
         this.groupRepository = groupRepository;
         this.userService = userService;
+    }
+
+    @Transactional
+    public boolean isGroupOwner(UserDetails principal, Long groupId) {
+        Optional<GroupEntity> groupEntityOptional = groupRepository.findById(groupId);
+        if (groupEntityOptional.isEmpty()) {
+            return false;
+        }
+
+        GroupEntity group = groupEntityOptional.get();
+
+        UserEntity currentUser = userService.getCurrentUser();
+        return group.getCreator().equals(currentUser);
     }
 
     public GroupEntity getGroupDetail(Long groupId) {
@@ -84,10 +100,6 @@ public class GroupService {
 
         GroupEntity group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new GroupNotFoundException("Group not found"));
-
-        if (!group.getCreator().equals(user)) {
-            throw new BadRequestException("Only the group owner can delete the group");
-        }
 
         groupRepository.delete(group);
     }

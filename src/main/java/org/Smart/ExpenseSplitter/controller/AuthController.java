@@ -48,13 +48,6 @@ public class AuthController {
     }
 
     @Operation(summary = "Authenticate user and generate JWT tokens")
-    @ApiResponses(
-            value = {
-                    @ApiResponse(responseCode = "201", description = "Registration successful"),
-                    @ApiResponse(responseCode = "200", description = "Login successful"),
-                    @ApiResponse(responseCode = "400", description = "Bad request (validation or credential issues)"),
-                    @ApiResponse(responseCode = "401", description = "Unauthorized (login failed)")
-            })
     @PostMapping("/register")
     public ResponseEntity<JsonResponse> registerUser(
             @Valid @RequestBody AuthRequestDTO authRequestDTO,

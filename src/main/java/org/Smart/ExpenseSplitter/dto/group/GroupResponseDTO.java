@@ -6,6 +6,7 @@ import org.Smart.ExpenseSplitter.dto.settlement.SettlementResponseDTO;
 import org.Smart.ExpenseSplitter.dto.user.UserResponseDTO;
 import org.Smart.ExpenseSplitter.entity.GroupEntity;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -20,7 +21,9 @@ public record GroupResponseDTO(
         List<UserResponseDTO> users,
         List<ExpenseResponseDTO> expenses,
         List<SettlementResponseDTO> settlements,
-        List<BalanceResponseDTO> balances
+        List<BalanceResponseDTO> balances,
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt
 ) {
 
     public GroupResponseDTO(
@@ -29,9 +32,11 @@ public record GroupResponseDTO(
             List<UserResponseDTO> users,
             List<ExpenseResponseDTO> expenses,
             List<SettlementResponseDTO> settlements,
-            List<BalanceResponseDTO> balances
+            List<BalanceResponseDTO> balances,
+            LocalDateTime createdAt,
+            LocalDateTime updatedAt
     ) {
-        this(null, name, creator, users, expenses, settlements, balances);
+        this(null, name, creator, users, expenses, settlements, balances, createdAt, updatedAt);
     }
 
     public GroupResponseDTO(GroupEntity group) {
@@ -50,7 +55,9 @@ public record GroupResponseDTO(
                         .orElse(List.of()),
                 Optional.ofNullable(group.getBalances())
                         .map(u -> u.stream().map(BalanceResponseDTO::new).collect(Collectors.toList()))
-                        .orElse(List.of())
+                        .orElse(List.of()),
+                group.getCreatedAt(),
+                group.getUpdatedAt()
         );
     }
 }

@@ -11,6 +11,7 @@ import org.Smart.ExpenseSplitter.exception.GroupNotFoundException;
 import org.Smart.ExpenseSplitter.exception.UserNotFoundException;
 import org.Smart.ExpenseSplitter.service.ExpenseMapper;
 import org.Smart.ExpenseSplitter.service.ExpenseService;
+import org.apache.coyote.BadRequestException;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -100,18 +101,16 @@ public class ExpenseController {
     ) {
         try {
             // Call the service to create the expense
-            ExpenseEntity createdExpense = expenseService.addExpenseToGroup(groupId, expenseRequestDTO);
+            ExpenseEntity createdExpense = expenseService.addExpense(groupId, expenseRequestDTO);
 
             // Map the created expense to a response DTO
             ExpenseResponseDTO expenseResponseDTO = expenseMapper.toResponseDTO(createdExpense);
 
             return ResponseEntity.status(HttpStatus.CREATED).body(new JsonResponse(true, "Expense created successfully", expenseResponseDTO));
-        } catch (AccessDeniedException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new JsonResponse(false, e.getMessage(), null));
         } catch (GroupNotFoundException | UserNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new JsonResponse(false, e.getMessage(), null));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new JsonResponse(false, "An error occurred: " + e.getMessage(), null));
+        } catch (BadRequestException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new JsonResponse(false, e.getMessage(), null));
         }
     }
 

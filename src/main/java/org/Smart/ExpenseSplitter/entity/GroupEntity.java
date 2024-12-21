@@ -41,4 +41,8 @@ public class GroupEntity extends BaseEntity {
     @OneToMany(mappedBy = "group", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JsonIgnore
     private List<SettlementEntity> settlements;
+
+    @OneToMany(mappedBy = "group", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JsonIgnore
+    private List<BalanceEntity> balances;
 }

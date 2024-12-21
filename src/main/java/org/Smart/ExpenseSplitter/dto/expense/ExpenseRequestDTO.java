@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * DTO for creating or updating an expense.
@@ -19,4 +20,10 @@ public class ExpenseRequestDTO {
 
     @NotNull
     private String expenseType;
+
+    private Long payerId;
+
+
+    @NotNull
+    private List<Long> involvedUserIds;
 }

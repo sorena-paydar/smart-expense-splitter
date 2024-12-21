@@ -14,7 +14,7 @@ public class ExpenseMapper {
                 expense.getAmount(),
                 expense.getExpenseType().toString(),
                 expense.getGroup().getName(),
-                expense.getUser().getUsername(),
+                expense.getPayer().getUsername(),
                 expense.getCreatedAt(),
                 expense.getUpdatedAt()
         );

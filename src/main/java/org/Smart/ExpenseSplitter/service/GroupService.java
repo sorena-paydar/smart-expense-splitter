@@ -3,6 +3,7 @@ package org.Smart.ExpenseSplitter.service;
 import org.Smart.ExpenseSplitter.entity.GroupEntity;
 import org.Smart.ExpenseSplitter.entity.UserEntity;
 import org.Smart.ExpenseSplitter.exception.GroupNotFoundException;
+import org.Smart.ExpenseSplitter.exception.UserNotFoundException;
 import org.Smart.ExpenseSplitter.repository.GroupRepository;
 import org.apache.coyote.BadRequestException;
 import org.springframework.data.domain.Page;
@@ -70,6 +71,12 @@ public class GroupService {
 
         return group.getUsers().stream()
                 .anyMatch(user -> user.getId().equals(currentUser.getId()));
+    }
+
+    @Transactional
+    public boolean isUserIdMemberOrOwnerOfGroup(GroupEntity group, Long userId) {
+        return group.getUsers().stream()
+                .anyMatch(user -> user.getId().equals(userId));
     }
 
     /**

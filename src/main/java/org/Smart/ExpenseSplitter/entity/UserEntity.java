@@ -28,13 +28,15 @@ public class UserEntity extends BaseEntity {
     @Column(nullable = false)
     private String password;
 
-    @ManyToMany(mappedBy = "users", fetch = FetchType.LAZY)
-    @JsonIgnore
-    private List<GroupEntity> groups;
+    @OneToMany(mappedBy = "creator", fetch = FetchType.LAZY)
+    private List<GroupEntity> groupsCreated;
 
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    @ManyToMany(mappedBy = "users", fetch = FetchType.LAZY)
+    private List<GroupEntity> groupsJoined;
+
+    @OneToMany(mappedBy = "payer", fetch = FetchType.LAZY)
     @JsonIgnore
-    private List<ExpenseEntity> expenses;
+    private List<ExpenseEntity> expensesPaid;
 
     @OneToMany(mappedBy = "payer", fetch = FetchType.LAZY)
     @JsonIgnore

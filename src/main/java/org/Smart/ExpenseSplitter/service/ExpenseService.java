@@ -6,14 +6,22 @@ import org.Smart.ExpenseSplitter.entity.ExpenseEntity;
 import org.Smart.ExpenseSplitter.entity.GroupEntity;
 import org.Smart.ExpenseSplitter.entity.UserEntity;
 import org.Smart.ExpenseSplitter.exception.ExpenseNotFoundException;
+import org.Smart.ExpenseSplitter.exception.GroupNotFoundException;
+import org.Smart.ExpenseSplitter.exception.UserNotFoundException;
 import org.Smart.ExpenseSplitter.repository.ExpenseRepository;
+import org.Smart.ExpenseSplitter.repository.GroupRepository;
+import org.Smart.ExpenseSplitter.repository.UserRepository;
 import org.Smart.ExpenseSplitter.type.ExpenseType;
+import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.file.AccessDeniedException;
+import java.util.List;
 
 @Service
 public class ExpenseService {
@@ -21,38 +29,55 @@ public class ExpenseService {
     private final ExpenseRepository expenseRepository;
     private final GroupService groupService;
     private final AuthService userService;
+    private final GroupRepository groupRepository;
+    private final UserRepository userRepository;
+    private final BalanceService balanceService;
 
     @Autowired
-    public ExpenseService(ExpenseRepository expenseRepository, GroupService groupService, AuthService userService) {
+    public ExpenseService(ExpenseRepository expenseRepository, GroupService groupService, AuthService userService, GroupRepository groupRepository, UserRepository userRepository, BalanceService balanceService) {
         this.expenseRepository = expenseRepository;
         this.groupService = groupService;
         this.userService = userService;
+        this.groupRepository = groupRepository;
+        this.userRepository = userRepository;
+        this.balanceService = balanceService;
     }
 
-    /**
-     * Adds an expense to a group.
-     * Only allows if the user is a member of the group.
-     *
-     * @param groupId           The ID of the group to add the expense to.
-     * @param expenseRequestDTO The expense request data.
-     * @return The created expense entity.
-     */
-    public ExpenseEntity addExpenseToGroup(Long groupId, ExpenseRequestDTO expenseRequestDTO) throws AccessDeniedException {
-        // Get the current authenticated user
-        UserEntity currentUser = userService.getCurrentUser();
+    @Transactional
+    public ExpenseEntity addExpense(Long groupId, ExpenseRequestDTO expenseRequestDTO) throws BadRequestException {
+        // 1. Create the expense
+        Long payerId = expenseRequestDTO.getPayerId();
 
-        // Create the Expense entity from the request DTO
+        UserEntity payer = userRepository.findById(payerId)
+                .orElseThrow(() -> new UserNotFoundException("Payer not found"));
+
+        GroupEntity group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new GroupNotFoundException("Group not found"));
+
+        if (groupService.isUserIdMemberOrOwnerOfGroup(group, payerId)) {
+            throw new BadRequestException("User is not creator or the member of the group");
+        }
+
         ExpenseEntity expense = new ExpenseEntity();
-        expense.setDescription(expenseRequestDTO.getDescription());
-        expense.setAmount(expenseRequestDTO.getAmount());
-        expense.setExpenseType(ExpenseType.valueOf(expenseRequestDTO.getExpenseType()));
 
-        // Fetch the group entity by groupId
-        GroupEntity group = groupService.getGroupById(groupId);
+        BigDecimal amount = expenseRequestDTO.getAmount();
+        List<Long> involvedUserIds = expenseRequestDTO.getInvolvedUserIds();
+
         expense.setGroup(group);
-        expense.setUser(currentUser);
+        expense.setPayer(payer);
+        expense.setAmount(amount);
+        ExpenseEntity savedExpense = expenseRepository.save(expense);
 
-        return expenseRepository.save(expense);
+        // 2. Calculate how much each user owes based on the expense
+        BigDecimal share = amount.divide(new BigDecimal(involvedUserIds.size()), RoundingMode.HALF_UP);
+
+        for (Long userId : involvedUserIds) {
+            // Update the balance for each user involved in the expense
+            balanceService.updateBalance(groupId, userId, share.negate());  // User owes the payer
+            balanceService.updateBalance(groupId, payerId, share);  // Payer is owed the money
+        }
+
+        return savedExpense;
     }
 
     /**
@@ -113,7 +138,7 @@ public class ExpenseService {
      */
     public Page<ExpenseEntity> getUserExpenses(Pageable pageable) throws AccessDeniedException {
         UserEntity currentUser = userService.getCurrentUser();
-        return expenseRepository.findByUserId(currentUser.getId(), pageable);
+        return expenseRepository.findByPayerId(currentUser.getId(), pageable);
     }
 
     /**
@@ -199,6 +224,6 @@ public class ExpenseService {
         ExpenseEntity expense = expenseRepository.findById(expenseId)
                 .orElseThrow(() -> new ExpenseNotFoundException("Expense not found"));
 
-        return expense.getUser().getId().equals(currentUser.getId());
+        return expense.getPayer().getId().equals(currentUser.getId());
     }
 }

@@ -7,6 +7,7 @@ import lombok.EqualsAndHashCode;
 import org.Smart.ExpenseSplitter.type.ExpenseType;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 
 @Entity
@@ -35,7 +36,14 @@ public class ExpenseEntity extends BaseEntity {
     private GroupEntity group;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    @JsonIgnore
-    private UserEntity user;
+    @JoinColumn(name = "payer_id", nullable = false)
+    private UserEntity payer;
+
+    @ManyToMany
+    @JoinTable(
+            name = "expense_users",
+            joinColumns = @JoinColumn(name = "expense_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id")
+    )
+    private List<UserEntity> usersInvolved;
 }

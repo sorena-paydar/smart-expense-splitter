@@ -1,5 +1,10 @@
 package org.Smart.ExpenseSplitter.dto.expense;
 
+import org.Smart.ExpenseSplitter.dto.group.GroupResponseDTO;
+import org.Smart.ExpenseSplitter.dto.user.UserResponseDTO;
+import org.Smart.ExpenseSplitter.entity.ExpenseEntity;
+import org.Smart.ExpenseSplitter.type.ExpenseType;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -10,9 +15,9 @@ public record ExpenseResponseDTO(
         Long id,
         String description,
         BigDecimal amount,
-        String expenseType,
-        String groupName,
-        String userName,
+        ExpenseType expenseType,
+        GroupResponseDTO group,
+        UserResponseDTO payer,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
@@ -23,7 +28,20 @@ public record ExpenseResponseDTO(
      * @param description Description of the expense
      * @param amount      Amount of the expense
      */
-    public ExpenseResponseDTO(Long id, String description, BigDecimal amount) {
-        this(id, description, amount, null, null, null, null, null);
+    public ExpenseResponseDTO(Long id, String description, ExpenseType expenseType, BigDecimal amount) {
+        this(id, description, amount, expenseType, null, null, null, null);
+    }
+
+    public ExpenseResponseDTO(ExpenseEntity expenseEntity) {
+        this(
+                null,
+                expenseEntity.getDescription(),
+                expenseEntity.getAmount(),
+                expenseEntity.getExpenseType(),
+                new GroupResponseDTO(expenseEntity.getGroup()),
+                new UserResponseDTO(expenseEntity.getPayer()),
+                expenseEntity.getCreatedAt(),
+                expenseEntity.getUpdatedAt()
+        );
     }
 }

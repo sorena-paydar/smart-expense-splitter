@@ -3,6 +3,8 @@ package org.Smart.ExpenseSplitter.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.Smart.ExpenseSplitter.dto.JsonResponse;
+import org.Smart.ExpenseSplitter.dto.group.GroupRequestDTO;
+import org.Smart.ExpenseSplitter.dto.group.GroupResponseDTO;
 import org.Smart.ExpenseSplitter.entity.GroupEntity;
 import org.Smart.ExpenseSplitter.exception.GroupNotFoundException;
 import org.Smart.ExpenseSplitter.exception.UserNotFoundException;
@@ -51,8 +53,9 @@ public class GroupController {
     @GetMapping("/{groupId}")
     public ResponseEntity<JsonResponse> getGroupDetail(@PathVariable Long groupId) {
         try {
-            GroupEntity group = groupService.getGroupDetail(groupId);
-            return ResponseEntity.ok(new JsonResponse(true, "Group detail retrieved successfully", group));
+            GroupEntity groupDetail = groupService.getGroupDetail(groupId);
+            GroupResponseDTO groupResponseDTO = new GroupResponseDTO(groupDetail);
+            return ResponseEntity.ok(new JsonResponse(true, "Group detail fetched successfully", groupResponseDTO));
         } catch (GroupNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(new JsonResponse(false, e.getMessage()));
@@ -74,8 +77,8 @@ public class GroupController {
             Pageable pageable
     ) {
         try {
-            Page<GroupEntity> userGroups = groupService.getUserGroups(pageable);
-            return ResponseEntity.ok(new JsonResponse(true, "List of groups retrieved successfully", userGroups));
+            Page<GroupResponseDTO> userGroups = groupService.getUserGroupsAsDTO(pageable);
+            return ResponseEntity.ok(new JsonResponse(true, "User groups fetched successfully", userGroups));
         } catch (UserNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(new JsonResponse(false, e.getMessage()));
@@ -84,19 +87,47 @@ public class GroupController {
 
     /**
      * Endpoint to create a new group.
-     * Requires the group name to be provided in the request body.
+     * Requires the group details in the request body.
      *
-     * @param groupName The name of the new group to be created.
-     * @return A ResponseEntity containing a success message and the created group or an error message if the group cannot be created.
+     * @param groupRequestDTO The group details provided in the request body.
+     * @return A ResponseEntity containing the created group details or an error message if the group cannot be created.
      */
     @Operation(summary = "Create a new group")
     @PostMapping("/create")
-    public ResponseEntity<JsonResponse> createGroup(String groupName) {
+    public ResponseEntity<JsonResponse> createGroup(GroupRequestDTO groupRequestDTO) {
         try {
-            GroupEntity group = groupService.createGroup(groupName);
+            GroupEntity createdGroup = groupService.createGroup(groupRequestDTO);
+            GroupResponseDTO createdGroupResponseDTO = new GroupResponseDTO(createdGroup);
+
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(new JsonResponse(true, "Group created successfully", group));
-        } catch (UserNotFoundException e) {
+                    .body(new JsonResponse(true, "Group created successfully", createdGroupResponseDTO));
+        } catch (GroupNotFoundException | UserNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new JsonResponse(false, e.getMessage()));
+        }
+    }
+
+    /**
+     * Endpoint to update an existing group.
+     * The user must be the owner of the group to update it.
+     *
+     * @param groupId The ID of the group to update.
+     * @param groupRequestDTO The updated group details.
+     * @return A ResponseEntity containing the updated group details or an error message if the group cannot be updated.
+     */
+    @Operation(summary = "Update group")
+    @PutMapping("/update/{groupId}")
+    @PreAuthorize("@groupService.isGroupOwner(#groupId)")
+    public ResponseEntity<JsonResponse> updateGroup(
+            @PathVariable Long groupId,
+            GroupRequestDTO groupRequestDTO
+    ) {
+        try {
+            GroupEntity updatedGroup = groupService.updateGroup(groupId, groupRequestDTO);
+            GroupResponseDTO updatedGroupResponseDTO = new GroupResponseDTO(updatedGroup);
+
+            return ResponseEntity.ok(new JsonResponse(true, "Group updated successfully", updatedGroupResponseDTO));
+        } catch (GroupNotFoundException | UserNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(new JsonResponse(false, e.getMessage()));
         }
@@ -113,8 +144,10 @@ public class GroupController {
     @PostMapping("/{groupId}/join")
     public ResponseEntity<JsonResponse> joinGroup(@PathVariable Long groupId) {
         try {
-            GroupEntity group = groupService.joinGroup(groupId);
-            return ResponseEntity.ok(new JsonResponse(true, "Joined group successfully", group));
+            GroupEntity joinedGroup = groupService.joinGroup(groupId);
+            GroupResponseDTO joinedGroupResponseDTO = new GroupResponseDTO(joinedGroup);
+
+            return ResponseEntity.ok(new JsonResponse(true, "Joined group successfully", joinedGroupResponseDTO));
         } catch (GroupNotFoundException | UserNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(new JsonResponse(false, e.getMessage()));
@@ -135,8 +168,10 @@ public class GroupController {
     @PostMapping("/{groupId}/leave")
     public ResponseEntity<JsonResponse> leaveGroup(@PathVariable Long groupId) {
         try {
-            GroupEntity group = groupService.leaveGroup(groupId);
-            return ResponseEntity.ok(new JsonResponse(true, "Left group successfully", group));
+            GroupEntity leavedGroup = groupService.leaveGroup(groupId);
+            GroupResponseDTO leavedGroupResponseDTO = new GroupResponseDTO(leavedGroup);
+
+            return ResponseEntity.ok(new JsonResponse(true, "Left group successfully", leavedGroupResponseDTO));
         } catch (GroupNotFoundException | UserNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(new JsonResponse(false, e.getMessage()));

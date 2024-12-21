@@ -1,18 +1,21 @@
 package org.Smart.ExpenseSplitter.service;
 
+import org.Smart.ExpenseSplitter.dto.group.GroupRequestDTO;
+import org.Smart.ExpenseSplitter.dto.group.GroupResponseDTO;
 import org.Smart.ExpenseSplitter.entity.GroupEntity;
 import org.Smart.ExpenseSplitter.entity.UserEntity;
 import org.Smart.ExpenseSplitter.exception.GroupNotFoundException;
-import org.Smart.ExpenseSplitter.exception.UserNotFoundException;
 import org.Smart.ExpenseSplitter.repository.GroupRepository;
 import org.apache.coyote.BadRequestException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
-
+import java.util.stream.Collectors;
 
 @Service
 public class GroupService {
@@ -39,7 +42,6 @@ public class GroupService {
         }
 
         GroupEntity group = groupEntityOptional.get();
-
         UserEntity currentUser = userService.getCurrentUser();
         return group.getCreator().getId().equals(currentUser.getId());
     }
@@ -73,6 +75,13 @@ public class GroupService {
                 .anyMatch(user -> user.getId().equals(currentUser.getId()));
     }
 
+    /**
+     * Checks if a specific user is either a member or the owner of the given group.
+     *
+     * @param group The group to check.
+     * @param userId The user ID to check for membership or ownership.
+     * @return true if the user is a member or the owner, false otherwise.
+     */
     @Transactional
     public boolean isUserIdMemberOrOwnerOfGroup(GroupEntity group, Long userId) {
         return group.getUsers().stream()
@@ -103,16 +112,30 @@ public class GroupService {
     }
 
     /**
-     * Creates a new group with the current authenticated user as the creator.
+     * Creates a new group with the specified details.
      *
-     * @param groupName The name of the new group.
-     * @return The created GroupEntity.
+     * @param groupRequestDTO The DTO containing the group information to create.
+     * @return The newly created GroupEntity.
      */
-    public GroupEntity createGroup(String groupName) {
+    public GroupEntity createGroup(GroupRequestDTO groupRequestDTO) {
         UserEntity creator = userService.getCurrentUser();
         GroupEntity group = new GroupEntity();
-        group.setName(groupName);
+        group.setName(groupRequestDTO.getName());
         group.setCreator(creator);
+
+        return groupRepository.save(group);
+    }
+
+    /**
+     * Updates the details of an existing group.
+     *
+     * @param groupId The ID of the group to update.
+     * @param groupRequestDTO The DTO containing the new group information.
+     * @return The updated GroupEntity.
+     */
+    public GroupEntity updateGroup(Long groupId, GroupRequestDTO groupRequestDTO) {
+        GroupEntity group = getGroupDetail(groupId);
+        group.setName(groupRequestDTO.getName());
 
         return groupRepository.save(group);
     }
@@ -181,5 +204,21 @@ public class GroupService {
                 .orElseThrow(() -> new GroupNotFoundException("Group not found"));
 
         groupRepository.delete(group);
+    }
+
+    /**
+     * Retrieves a paginated list of groups the current authenticated user belongs to, in the form of DTOs.
+     *
+     * @param pageable Pagination information for retrieving groups.
+     * @return A page of GroupResponseDTOs the current user is part of.
+     */
+    public Page<GroupResponseDTO> getUserGroupsAsDTO(Pageable pageable) {
+        Page<GroupEntity> userGroups = getUserGroups(pageable);
+
+        List<GroupResponseDTO> groupResponseDTOs = userGroups.getContent().stream()
+                .map(GroupResponseDTO::new)
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(groupResponseDTOs, pageable, userGroups.getTotalElements());
     }
 }

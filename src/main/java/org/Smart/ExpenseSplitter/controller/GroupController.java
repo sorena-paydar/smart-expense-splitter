@@ -77,7 +77,7 @@ public class GroupController {
             Pageable pageable
     ) {
         try {
-            Page<GroupResponseDTO> userGroups = groupService.getUserGroupsAsDTO(pageable);
+            Page<?> userGroups = groupService.getUserGroupsAsDTO(pageable);
             return ResponseEntity.ok(new JsonResponse(true, "User groups fetched successfully", userGroups));
         } catch (UserNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -117,7 +117,7 @@ public class GroupController {
      */
     @Operation(summary = "Update group")
     @PutMapping("/update/{groupId}")
-    @PreAuthorize("@groupService.isGroupOwner(#groupId)")
+    @PreAuthorize("@groupService.isCurrentUserGroupOwner(#groupId)")
     public ResponseEntity<JsonResponse> updateGroup(
             @PathVariable Long groupId,
             GroupRequestDTO groupRequestDTO

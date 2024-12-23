@@ -45,5 +45,5 @@ public class ExpenseEntity extends BaseEntity {
             joinColumns = @JoinColumn(name = "expense_id"),
             inverseJoinColumns = @JoinColumn(name = "user_id")
     )
-    private List<UserEntity> usersInvolved;
+    private List<UserEntity> participants;
 }

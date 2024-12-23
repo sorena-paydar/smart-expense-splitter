@@ -45,36 +45,28 @@ public class ExpenseService {
 
     @Transactional
     public ExpenseEntity addExpense(Long groupId, ExpenseRequestDTO expenseRequestDTO) throws BadRequestException {
-        // 1. Create the expense
-        Long payerId = expenseRequestDTO.getPayerId();
+        BigDecimal amount = expenseRequestDTO.getAmount();
+        GroupEntity group = groupRepository.findById(groupId).orElseThrow(() -> new GroupNotFoundException("Group not found"));
+        UserEntity payer = userRepository.findById(expenseRequestDTO.getPayerId()).orElseThrow(() -> new UserNotFoundException("Payer not found"));
+        List<UserEntity> participants = userRepository.findAllById(expenseRequestDTO.getParticipantIds());
 
-        UserEntity payer = userRepository.findById(payerId)
-                .orElseThrow(() -> new UserNotFoundException("Payer not found"));
-
-        GroupEntity group = groupRepository.findById(groupId)
-                .orElseThrow(() -> new GroupNotFoundException("Group not found"));
-
-        if (groupService.isUserIdMemberOrOwnerOfGroup(group, payerId)) {
-            throw new BadRequestException("User is not creator or the member of the group");
-        }
+        BigDecimal splitAmount = amount.divide(BigDecimal.valueOf(participants.size()), RoundingMode.HALF_UP);
 
         ExpenseEntity expense = new ExpenseEntity();
-
-        BigDecimal amount = expenseRequestDTO.getAmount();
-        List<Long> involvedUserIds = expenseRequestDTO.getInvolvedUserIds();
-
         expense.setGroup(group);
         expense.setPayer(payer);
         expense.setAmount(amount);
+        expense.setExpenseType(ExpenseType.valueOf(expenseRequestDTO.getExpenseType()));
+        expense.setDescription(expenseRequestDTO.getDescription());
+        expense.setParticipants(participants);
+
         ExpenseEntity savedExpense = expenseRepository.save(expense);
 
-        // 2. Calculate how much each user owes based on the expense
-        BigDecimal share = amount.divide(new BigDecimal(involvedUserIds.size()), RoundingMode.HALF_UP);
-
-        for (Long userId : involvedUserIds) {
-            // Update the balance for each user involved in the expense
-            balanceService.updateBalance(groupId, userId, share.negate());  // User owes the payer
-            balanceService.updateBalance(groupId, payerId, share);  // Payer is owed the money
+        // Update balances for each participant
+        for (UserEntity participant : participants) {
+            if (!participant.getId().equals(payer.getId())) {
+                balanceService.updateBalance(groupId, participant.getId(), payer.getId(), splitAmount);
+            }
         }
 
         return savedExpense;
@@ -125,7 +117,11 @@ public class ExpenseService {
      * @param pageable Pagination information.
      * @return A paginated list of expenses for the specified group.
      */
-    public Page<ExpenseEntity> getExpensesByGroup(Long groupId, Pageable pageable) throws AccessDeniedException {
+    public Page<ExpenseEntity> getGroupExpenses(Long groupId, Pageable pageable) throws BadRequestException {
+        if (!groupService.isCurrentUserMemberOfGroup(groupId) && !groupService.isCurrentUserGroupOwner(groupId)) {
+            throw new BadRequestException("User is not joined to this group");
+        }
+
         return expenseRepository.findByGroupId(groupId, pageable);
     }
 
@@ -169,7 +165,7 @@ public class ExpenseService {
         GroupEntity group = expense.getGroup();
 
         // Check if the user is a member of the group or the group owner
-        return groupService.isUserMemberOfGroup(group.getId()) || groupService.isGroupOwner(group.getId());
+        return groupService.isCurrentUserMemberOfGroup(group.getId()) || groupService.isCurrentUserGroupOwner(group.getId());
     }
 
     /**
@@ -188,7 +184,7 @@ public class ExpenseService {
         GroupEntity group = expense.getGroup();
 
         // Check if the user is a member of the group
-        return groupService.isUserMemberOfGroup(group.getId());
+        return groupService.isCurrentUserMemberOfGroup(group.getId());
     }
 
 
@@ -208,7 +204,7 @@ public class ExpenseService {
         GroupEntity group = expense.getGroup();
 
         // Check if the user is the group owner
-        return groupService.isGroupOwner(group.getId());
+        return groupService.isCurrentUserGroupOwner(group.getId());
     }
 
     /**
@@ -218,7 +214,7 @@ public class ExpenseService {
      * @return true if the current user is the creator of the expense, false otherwise.
      */
     @Transactional
-    public boolean isCurrentUserCreatorOfExpense(Long expenseId) {
+    public boolean isCurrentUserExpensePayer(Long expenseId) {
         UserEntity currentUser = userService.getCurrentUser();
 
         ExpenseEntity expense = expenseRepository.findById(expenseId)

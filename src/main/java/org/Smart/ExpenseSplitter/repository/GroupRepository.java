@@ -18,19 +18,8 @@ import java.util.Optional;
 @Repository
 public interface GroupRepository extends JpaRepository<GroupEntity, Long> {
 
-    /**
-     * Finds all groups that the given user has created or joined.
-     *
-     * @param user the user for whom to find groups
-     * @param pageable the pagination information
-     * @return a {@link Page} of {@link GroupEntity} containing the groups
-     *         that the user is associated with, either as the creator or a member
-     */
-    @Query("SELECT g FROM GroupEntity g " +
-            "WHERE g.creator = :user OR :user MEMBER OF g.users")
-    Page<GroupEntity> findCurrentUserGroups(UserEntity user, Pageable pageable);
 
-    @EntityGraph(attributePaths = {"users", "expenses", "settlements"})
-    Optional<GroupEntity> findWithDetailsById(Long id);
+    GroupEntity findByName(String name);
 
+    Page<GroupEntity> findByOwner(UserEntity user, Pageable pageable);
 }

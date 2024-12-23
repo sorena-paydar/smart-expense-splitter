@@ -10,7 +10,7 @@ import java.util.List;
 @Entity
 @Table(name = "users")
 @Data
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class UserEntity extends BaseEntity {
 
     @Id
@@ -28,21 +28,26 @@ public class UserEntity extends BaseEntity {
     @Column(nullable = false)
     private String password;
 
-    @OneToMany(mappedBy = "creator", fetch = FetchType.LAZY)
-    private List<GroupEntity> groupsCreated;
+    @OneToMany(mappedBy = "owner", fetch = FetchType.LAZY)
+    private List<GroupEntity> ownedGroups;
 
-    @ManyToMany(mappedBy = "users", fetch = FetchType.LAZY)
-    private List<GroupEntity> groupsJoined;
+    @ManyToMany(mappedBy = "members", fetch = FetchType.LAZY)
+    private List<GroupEntity> joinedGroups;
 
-    @OneToMany(mappedBy = "payer", fetch = FetchType.LAZY)
     @JsonIgnore
-    private List<ExpenseEntity> expensesPaid;
+    @OneToMany(mappedBy = "payer", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ExpenseEntity> paidExpenses;
 
-    @OneToMany(mappedBy = "payer", fetch = FetchType.LAZY)
     @JsonIgnore
-    private List<SettlementEntity> settlementsAsPayer;
+    @ManyToMany(mappedBy = "participants", fetch = FetchType.LAZY)
+    private List<ExpenseEntity> participatedExpenses;
 
-    @OneToMany(mappedBy = "payee", fetch = FetchType.LAZY)
     @JsonIgnore
-    private List<SettlementEntity> settlementsAsPayee;
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<BalanceEntity> balancesOwing;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "owesTo", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<BalanceEntity> balancesOwed;
+
 }

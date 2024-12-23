@@ -1,5 +1,6 @@
 package org.Smart.ExpenseSplitter.dto.expense;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.Smart.ExpenseSplitter.dto.group.GroupResponseDTO;
 import org.Smart.ExpenseSplitter.dto.user.UserResponseDTO;
 import org.Smart.ExpenseSplitter.entity.ExpenseEntity;
@@ -8,9 +9,8 @@ import org.Smart.ExpenseSplitter.type.ExpenseType;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-/**
- * Record for responding with expense details.
- */
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public record ExpenseResponseDTO(
         Long id,
         String description,
@@ -21,24 +21,20 @@ public record ExpenseResponseDTO(
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
-    /**
-     * Simplified constructor for lightweight responses.
-     *
-     * @param id          Expense ID
-     * @param description Description of the expense
-     * @param amount      Amount of the expense
-     */
-    public ExpenseResponseDTO(Long id, String description, ExpenseType expenseType, BigDecimal amount) {
-        this(id, description, amount, expenseType, null, null, null, null);
-    }
-
     public ExpenseResponseDTO(ExpenseEntity expenseEntity) {
         this(
-                null,
+                expenseEntity.getId(),
                 expenseEntity.getDescription(),
                 expenseEntity.getAmount(),
                 expenseEntity.getExpenseType(),
-                new GroupResponseDTO(expenseEntity.getGroup()),
+                new GroupResponseDTO(
+                        expenseEntity.getId(),
+                        expenseEntity.getGroup().getName(),
+                        new UserResponseDTO(expenseEntity.getGroup().getOwner()),
+                        expenseEntity.getGroup().getMembers(),
+                        expenseEntity.getGroup().getCreatedAt(),
+                        expenseEntity.getGroup().getUpdatedAt()
+                ),
                 new UserResponseDTO(expenseEntity.getPayer()),
                 expenseEntity.getCreatedAt(),
                 expenseEntity.getUpdatedAt()

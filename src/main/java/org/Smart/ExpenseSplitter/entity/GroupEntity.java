@@ -21,28 +21,23 @@ public class GroupEntity extends BaseEntity {
     private String name;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "creator_id", nullable = false)
-    @JsonIgnore
-    private UserEntity creator;
+    @JoinColumn(name = "owner_id", nullable = false)
+    private UserEntity owner;
 
-    @ManyToMany(fetch = FetchType.LAZY)
+    @JsonIgnore
+    @OneToMany(mappedBy = "group", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ExpenseEntity> expenses;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "group", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<BalanceEntity> balances;
+
+    @JsonIgnore
+    @ManyToMany
     @JoinTable(
-            name = "group_users",
+            name = "group_members",
             joinColumns = @JoinColumn(name = "group_id"),
             inverseJoinColumns = @JoinColumn(name = "user_id")
     )
-    @JsonIgnore
-    private List<UserEntity> users;
-
-    @OneToMany(mappedBy = "group", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JsonIgnore
-    private List<ExpenseEntity> expenses;
-
-    @OneToMany(mappedBy = "group", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JsonIgnore
-    private List<SettlementEntity> settlements;
-
-    @OneToMany(mappedBy = "group", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JsonIgnore
-    private List<BalanceEntity> balances;
+    private List<UserEntity> members;
 }

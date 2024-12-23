@@ -1,7 +1,6 @@
 package org.Smart.ExpenseSplitter.repository;
 
 import org.Smart.ExpenseSplitter.entity.ExpenseEntity;
-import org.Smart.ExpenseSplitter.entity.UserEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

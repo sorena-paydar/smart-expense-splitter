@@ -1,35 +1,28 @@
 package org.Smart.ExpenseSplitter.dto.balance;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.Smart.ExpenseSplitter.dto.group.GroupResponseDTO;
 import org.Smart.ExpenseSplitter.dto.user.UserResponseDTO;
 import org.Smart.ExpenseSplitter.entity.BalanceEntity;
+import org.Smart.ExpenseSplitter.entity.BalanceId;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public record BalanceResponseDTO(
-        Long id,
-        UserResponseDTO user,
-        GroupResponseDTO group,
-        BigDecimal balance,
+        BalanceId groupId,
+        UserResponseDTO fromUser,   // User who owes money
+        UserResponseDTO toUser,     // User who is owed money
+        BigDecimal amount,          // Amount owed
         LocalDateTime updatedAt
 ) {
-    public BalanceResponseDTO(
-            UserResponseDTO user,
-            GroupResponseDTO group,
-            BigDecimal balance,
-            LocalDateTime updatedAt
-    ) {
-        this(null, user, group, balance, updatedAt);
-    }
-
-
     public BalanceResponseDTO(BalanceEntity balanceEntity) {
         this(
-                null,
+                balanceEntity.getId(),
                 new UserResponseDTO(balanceEntity.getUser()),
-                new GroupResponseDTO(balanceEntity.getGroup()),
-                balanceEntity.getBalance(),
+                new UserResponseDTO(balanceEntity.getOwesTo()),
+                balanceEntity.getAmount(),
                 balanceEntity.getUpdatedAt()
         );
     }

@@ -7,6 +7,8 @@ import org.Smart.ExpenseSplitter.entity.GroupEntity;
 import org.Smart.ExpenseSplitter.entity.UserEntity;
 import org.Smart.ExpenseSplitter.exception.GroupNotFoundException;
 import org.Smart.ExpenseSplitter.exception.UserNotFoundException;
+import org.Smart.ExpenseSplitter.handler.Transaction;
+import org.Smart.ExpenseSplitter.handler.UserBalance;
 import org.Smart.ExpenseSplitter.repository.BalanceRepository;
 import org.Smart.ExpenseSplitter.repository.GroupRepository;
 import org.Smart.ExpenseSplitter.repository.UserRepository;
@@ -18,9 +20,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
+
 
 @Service
 public class BalanceService {
@@ -29,13 +31,15 @@ public class BalanceService {
     private final GroupRepository groupRepository;
     private final UserRepository userRepository;
     private final AuthService userService;
+    private final GroupService groupService;
 
     public BalanceService(BalanceRepository balanceRepository, GroupRepository groupRepository,
-                          UserRepository userRepository, AuthService userService) {
+                          UserRepository userRepository, AuthService userService, GroupService groupService) {
         this.balanceRepository = balanceRepository;
         this.groupRepository = groupRepository;
         this.userRepository = userRepository;
         this.userService = userService;
+        this.groupService = groupService;
     }
 
     // Fetch balances for a group with pagination
@@ -86,17 +90,6 @@ public class BalanceService {
         balanceRepository.save(balance);
     }
 
-    // Reset all balances to zero for a specific group
-    @Transactional
-    public void resetBalancesForGroup(Long groupId) {
-        GroupEntity group = groupRepository.findById(groupId)
-                .orElseThrow(() -> new GroupNotFoundException("Group not found"));
-
-        List<BalanceEntity> balances = balanceRepository.findByGroupId(group.getId());
-        balances.forEach(balance -> balance.setAmount(BigDecimal.ZERO));
-        balanceRepository.saveAll(balances);
-    }
-
     // Fetch current user's balances as DTO
     public Page<BalanceResponseDTO> getUserBalancesAsDTO(Pageable pageable) {
         Page<BalanceEntity> userBalances = getBalancesForCurrentUser(pageable);
@@ -109,9 +102,7 @@ public class BalanceService {
     }
 
     @Transactional
-    public BalanceEntity settleBalance(Long groupId, Long toUserId, BigDecimal amount) throws BadRequestException {
-        UserEntity currentUser = userService.getCurrentUser();
-        Long fromUserId = currentUser.getId();
+    public BalanceEntity settleBalance(Long groupId, Long fromUserId, Long toUserId, BigDecimal amount) throws BadRequestException {
 
         BalanceId balanceId = new BalanceId(groupId, fromUserId, toUserId);
         Optional<BalanceEntity> optionalBalance = balanceRepository.findById(balanceId);
@@ -137,5 +128,89 @@ public class BalanceService {
         }
 
         return balance;
+    }
+
+    @Transactional
+    public void optimizeDebts(Long groupId) {
+        // Step 1: Fetch all balances for the group
+        List<BalanceEntity> balances = balanceRepository.findByGroupId(groupId);
+        if (balances.isEmpty()) return;
+
+        // Step 2: Calculate net balances
+        Map<Long, BigDecimal> netBalances = new HashMap<>();
+
+        for (BalanceEntity balance : balances) {
+            Long fromUser = balance.getId().getUserId();
+            Long toUser = balance.getId().getOwesTo();
+            BigDecimal amount = balance.getAmount();
+
+            // Subtract amount from the payer's net balance
+            netBalances.put(fromUser, netBalances.getOrDefault(fromUser, BigDecimal.ZERO).subtract(amount));
+
+            // Add amount to the payee's net balance
+            netBalances.put(toUser, netBalances.getOrDefault(toUser, BigDecimal.ZERO).add(amount));
+        }
+
+
+        // Step 3: Simplify debts using the net balances
+        List<Transaction> transactions = simplifyDebts(netBalances);
+
+        // Step 4: Update the database with optimized transactions
+        balanceRepository.deleteByGroupId(groupId); // Clear existing balances
+
+        for (Transaction transaction : transactions) {
+            BalanceEntity balance = new BalanceEntity();
+            BalanceId balanceId = new BalanceId(groupId, transaction.getFromUser(), transaction.getToUser());
+
+            GroupEntity group = groupService.getGroupById(groupId);
+            UserEntity fromUser = userService.getUserById(transaction.getFromUser());
+            UserEntity toUser = userService.getUserById(transaction.getToUser());
+
+            balance.setId(balanceId);
+            balance.setGroup(group);
+            balance.setUser(fromUser);
+            balance.setOwesTo(toUser);
+            balance.setAmount(transaction.getAmount());
+
+            balanceRepository.save(balance);
+        }
+    }
+
+    private List<Transaction> simplifyDebts(Map<Long, BigDecimal> netBalances) {
+        List<Transaction> transactions = new ArrayList<>();
+        PriorityQueue<UserBalance> creditors = new PriorityQueue<>(Comparator.comparing(UserBalance::getBalance).reversed());
+        PriorityQueue<UserBalance> debtors = new PriorityQueue<>(Comparator.comparing(UserBalance::getBalance));
+
+        // Separate creditors and debtors
+        for (Map.Entry<Long, BigDecimal> entry : netBalances.entrySet()) {
+            Long userId = entry.getKey();
+            BigDecimal balance = entry.getValue();
+
+            if (balance.compareTo(BigDecimal.ZERO) > 0) {
+                creditors.add(new UserBalance(userId, balance));
+            } else if (balance.compareTo(BigDecimal.ZERO) < 0) {
+                debtors.add(new UserBalance(userId, balance.abs()));
+            }
+        }
+
+        // Match debtors with creditors
+        while (!creditors.isEmpty() && !debtors.isEmpty()) {
+            UserBalance creditor = creditors.poll();
+            UserBalance debtor = debtors.poll();
+
+            assert debtor != null;
+            BigDecimal amount = creditor.getBalance().min(debtor.getBalance());
+            transactions.add(new Transaction(debtor.getUserId(), creditor.getUserId(), amount));
+
+            if (creditor.getBalance().compareTo(amount) > 0) {
+                creditors.add(new UserBalance(creditor.getUserId(), creditor.getBalance().subtract(amount)));
+            }
+
+            if (debtor.getBalance().compareTo(amount) > 0) {
+                debtors.add(new UserBalance(debtor.getUserId(), debtor.getBalance().subtract(amount)));
+            }
+        }
+
+        return transactions;
     }
 }

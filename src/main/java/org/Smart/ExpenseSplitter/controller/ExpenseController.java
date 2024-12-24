@@ -124,8 +124,8 @@ public class ExpenseController {
     ) {
         try {
             Page<ExpenseEntity> expensesByGroup = expenseService.getGroupExpenses(groupId, pageable);
-//            Page<ExpenseResponseDTO> expensesByGroupResponseDTOs = expensesByGroup.map(ExpenseResponseDTO::new);
-            return ResponseEntity.ok(new JsonResponse(true, "Expenses by group ID fetched successfully", expensesByGroup));
+            Page<ExpenseResponseDTO> expensesByGroupResponseDTOs = expensesByGroup.map(ExpenseResponseDTO::new);
+            return ResponseEntity.ok(new JsonResponse(true, "Expenses by group ID fetched successfully", expensesByGroupResponseDTOs));
         } catch (GroupNotFoundException | UserNotFoundException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new JsonResponse(false, e.getMessage(), null));
         } catch (BadRequestException e) {

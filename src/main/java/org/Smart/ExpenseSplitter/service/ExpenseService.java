@@ -69,6 +69,8 @@ public class ExpenseService {
             }
         }
 
+        balanceService.optimizeDebts(groupId);
+
         return savedExpense;
     }
 

@@ -8,6 +8,9 @@ import org.Smart.ExpenseSplitter.type.ExpenseType;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -18,6 +21,7 @@ public record ExpenseResponseDTO(
         ExpenseType expenseType,
         GroupResponseDTO group,
         UserResponseDTO payer,
+        List<UserResponseDTO> participants,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
@@ -36,6 +40,9 @@ public record ExpenseResponseDTO(
                         expenseEntity.getGroup().getUpdatedAt()
                 ),
                 new UserResponseDTO(expenseEntity.getPayer()),
+                Optional.ofNullable(expenseEntity.getParticipants())
+                        .map(u -> u.stream().map(UserResponseDTO::new).collect(Collectors.toList()))
+                        .orElse(List.of()),
                 expenseEntity.getCreatedAt(),
                 expenseEntity.getUpdatedAt()
         );

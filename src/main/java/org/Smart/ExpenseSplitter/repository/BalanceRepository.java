@@ -23,4 +23,5 @@ public interface BalanceRepository extends JpaRepository<BalanceEntity, Long> {
 
     Page<BalanceEntity> findByOwesTo(UserEntity owesTo, Pageable pageable);
 
+    void deleteByGroupId(Long groupId);
 }

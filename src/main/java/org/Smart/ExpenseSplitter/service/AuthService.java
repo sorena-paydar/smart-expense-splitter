@@ -24,6 +24,11 @@ public class AuthService implements UserDetailsService {
         return userRepository.findByUsername(username).isPresent();
     }
 
+    public UserEntity getUserById(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+    }
+
     public Optional<UserEntity> findByUsername(String username) {
         Optional<UserEntity> user = userRepository.findByUsername(username);
         if (user.isEmpty()) {

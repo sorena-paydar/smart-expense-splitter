@@ -5,7 +5,9 @@ import org.Smart.ExpenseSplitter.dto.JsonResponse;
 import org.Smart.ExpenseSplitter.dto.balance.BalanceRequestDTO;
 import org.Smart.ExpenseSplitter.dto.balance.BalanceResponseDTO;
 import org.Smart.ExpenseSplitter.entity.BalanceEntity;
+import org.Smart.ExpenseSplitter.entity.UserEntity;
 import org.Smart.ExpenseSplitter.exception.UserNotFoundException;
+import org.Smart.ExpenseSplitter.service.AuthService;
 import org.Smart.ExpenseSplitter.service.BalanceService;
 import org.apache.coyote.BadRequestException;
 import org.springdoc.core.annotations.ParameterObject;
@@ -24,11 +26,12 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "Balances", description = "Endpoints for managing balances.")
 public class BalanceController {
 
-
     private final BalanceService balanceService;
+    private final AuthService userService;
 
-    public BalanceController(BalanceService balanceService) {
+    public BalanceController(BalanceService balanceService, AuthService userService) {
         this.balanceService = balanceService;
+        this.userService = userService;
     }
 
     @GetMapping("/user")
@@ -51,8 +54,12 @@ public class BalanceController {
     @PreAuthorize("@groupService.isCurrentUserMemberOrOwnerOfGroup(#balanceRequestDTO.groupId)")
     public ResponseEntity<JsonResponse> settleBalance(BalanceRequestDTO balanceRequestDTO) {
         try {
+            UserEntity currentUser = userService.getCurrentUser();
+            Long fromUserId = currentUser.getId();
+
             BalanceEntity settledBalance = balanceService.settleBalance(
                     balanceRequestDTO.getGroupId(),
+                    fromUserId,
                     balanceRequestDTO.getToUserId(),
                     balanceRequestDTO.getAmount()
             );
